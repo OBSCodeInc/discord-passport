@@ -1,0 +1,15 @@
+{
+  "name": "discord-passport",
+  "version": "1.0.0",
+  "description": "Easy to use, intuitive discord login flow.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node src/index.js"
+  },
+  "author": "OBSCode",
+  "license": "ISC",
+  "dependencies": {
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.6.1"
+  }
+}
