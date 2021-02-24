@@ -11,9 +11,6 @@
   "repository": {
     "url": "git://github.com/OBSCodeInc/discord-passport.git"
   },
-  "publishConfig": {
-    "registry":"https://npm.pkg.github.com"
-  },
   "dependencies": {
     "form-data": "^4.0.0",
     "node-fetch": "^2.6.1"
