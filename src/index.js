@@ -1,6 +1,6 @@
 'use strict';
 
-const fetch = require("node-fetch");
+const req = require('@helperdiscord/centra');
 const formData = require("form-data");
 
 /**
@@ -85,9 +85,9 @@ if (!options.scope) throw new Error("DiscordPassportError: Missing the scope par
  * @property {?integer} this.user.public_flags The public flags on a user's account.
  */ 
 async open() {
-var {code, state, client_id, client_secret, redirect_uri, scope} = this.options;
+const {code, state, client_id, client_secret, redirect_uri, scope} = this.options;
 
-var codeData = new formData();
+const codeData = new formData();
 codeData.append('client_id', client_id)
 codeData.append('client_secret', client_secret)
 codeData.append('grant_type', 'authorization_code')
@@ -97,18 +97,17 @@ codeData.append('scope', scope.join(" "));
 
 if (state) codeData.append('state', state);
 
-var tokenRequest = await fetch("https://discord.com/api/oauth2/token", {
-    method: "post",
-    body: codeData
-})
+const tokenRequest = await req("https://discord.com/api/oauth2/token", "POST")
+    .body(codeData)
+    .send();
 
 if (!tokenRequest) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
 
-var tokenResults = await tokenRequest.json();
+const tokenResults = await tokenRequest.json();
 
 if (!tokenResults || !tokenResults.access_token) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
 
-var { access_token, refresh_token, expires_in, token_type } = tokenResults;
+const { access_token, refresh_token, expires_in, token_type } = tokenResults;
 
 this.token = access_token;
 
@@ -118,49 +117,43 @@ this.refresh_token = refresh_token;
 
 this.expires_in = expires_in;
 
-var token = access_token;
+const token = access_token;
 
-var scopeFetchers = {
+const scopeFetchers = {
     connections: async () => {
-        var fetchReq = await fetch("https://discord.com/api/users/@me/connections", {
-            headers: {
-                authorization: `${token_type} ${token}`,
-              },
-        })
+        const fetchReq = await req("https://discord.com/api/users/@me/connections", "GET")
+            .header("authorization", `${token_type} ${token}`)
+            .send();
 
         if (!fetchReq) throw new Error("DiscordPassportError: Authorization failed.");
 
-        var fetchRes = await fetchReq.json();
+        const fetchRes = await fetchReq.json();
 
         this.connections = fetchRes;
 
         return fetchRes;
     },
     identify: async () => {
-        var fetchReq = await fetch("https://discord.com/api/users/@me", {
-            headers: {
-                authorization: `${token_type} ${token}`,
-              },
-        })
+        const fetchReq = await req("https://discord.com/api/users/@me", "GET")
+            .header("authorization", `${token_type} ${token}`)
+            .send();
 
         if (!fetchReq) throw new Error("DiscordPassportError: Authorization failed.");
 
-        var fetchRes = await fetchReq.json();
+        const fetchRes = await fetchReq.json();
 
         this.user = fetchRes;
 
         return fetchRes;
     },
     guilds: async () => {
-        var fetchReq = await fetch("https://discord.com/api/users/@me/guilds", {
-            headers: {
-                authorization: `${token_type} ${token}`,
-              },
-        })
+        const fetchReq = await req("https://discord.com/api/users/@me/guilds", "GET")
+            .header("authorization", `${token_type} ${token}`)
+            .send();
 
         if (!fetchReq) throw new Error("DiscordPassportError: Authorization failed.");
 
-        var fetchRes = await fetchReq.json();
+        const fetchRes = await fetchReq.json();
 
         this.guilds = fetchRes;
 
@@ -184,12 +177,12 @@ return;
  * @property {string} this.token_type The updated type of access token. 
  * @property {string} this.expires_in The updated time in milliseconds till the access token expires. 
  */
-async refresh(){
-    var {code, state, client_id, client_secret, redirect_uri, scope} = this.options;
+async refresh() {
+    const {state, client_id, client_secret, redirect_uri, scope} = this.options;
 
     if (!this.refresh_token) throw new Error("DiscordPassportError: Attempted to refresh authorization before opening one.");
 
-    var refreshData = new formData();
+    const refreshData = new formData();
     refreshData.append('client_id', client_id)
     refreshData.append('client_secret', client_secret)
     refreshData.append('grant_type', 'refresh_token')
@@ -199,18 +192,17 @@ async refresh(){
     
     if (state) refreshData.append('state', state);
     
-    var tokenRequest = await fetch("https://discord.com/api/oauth2/token", {
-        method: "post",
-        body: refreshData
-    })
+    const tokenRequest = await req("https://discord.com/api/oauth2/token", "GET")
+        .body(refreshData)
+        .send();
     
     if (!tokenRequest) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
     
-    var tokenResults = await tokenRequest.json();
+    const tokenResults = await tokenRequest.json();
     
     if (!tokenResults || !tokenResults.access_token) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
     
-    var { access_token, refresh_token, expires_in, token_type } = tokenResults;
+    const { access_token, refresh_token, expires_in, token_type } = tokenResults;
     
     this.token = access_token;
     
