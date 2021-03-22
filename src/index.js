@@ -1,6 +1,6 @@
 'use strict';
 
-const req = require('@helperdiscord/centra');
+const req = require('petitio');
 const formData = require("form-data");
 
 /**

@@ -12,7 +12,7 @@
     "url": "git://github.com/OBSCodeInc/discord-passport.git"
   },
   "dependencies": {
-    "@helperdiscord/centra": "^2.4.2",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "petitio": "^1.0.0"
   }
 }
