@@ -14,13 +14,6 @@
   },
   "dependencies": {
     "form-data": "^4.0.0",
-<<<<<<< Updated upstream
     "petitio": "^1.0.0"
-=======
-    "node-fetch": "^2.6.1"
-  },
-  "devDependencies": {
-    "documentation": "^13.1.1"
->>>>>>> Stashed changes
   }
 }
