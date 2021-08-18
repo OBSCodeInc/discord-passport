@@ -1,6 +1,6 @@
 'use strict';
 
-const req = require('petitio');
+const fetch = require('node-fetch');
 const formData = require("form-data");
 
 /**
@@ -13,12 +13,14 @@ const formData = require("form-data");
  * @param {string} options.redirect_uri The `redirect_uri` for authorization.
  * @param {array} options.scope The scopes requested in your authorization url.
  * @method open Opens a new oauth flow.
+ * @method refresh Refresh your `access_token` using the current `refresh_token`.
  * @property {string} token The access token. 
  * @property {string} refresh_token The refresh access token. 
  * @property {string} token_type The type of access token. 
  * @property {string} expires_in The time in milliseconds till the access token expires. 
  * @property {array} connections A list of this user's connections, requires the `connections`. 
  * @property {array} guilds A list of this user's guilds, with limited information, requires the `guilds` scope. 
+ * @method joinGuild Adds the user to a guild, requires the `guilds.join` scope.
  * @property {object} user Information about this user, requires the `identify` scope.
  * @property {string} user.id The users ID.
  * @property {string} user.username The user's username.
@@ -97,15 +99,18 @@ codeData.append('scope', scope.join(" "));
 
 if (state) codeData.append('state', state);
 
-const tokenRequest = await req("https://discord.com/api/oauth2/token", "POST")
-    .body(codeData)
-    .send();
+var tokenRequest = await fetch("https://discord.com/api/oauth2/token", {
+    method: "post",
+    body: codeData
+})
 
 if (!tokenRequest) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
 
 const tokenResults = await tokenRequest.json();
 
-if (!tokenResults || !tokenResults.access_token) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
+if (!tokenResults) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
+
+if (!tokenResults.access_token) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.\n" + JSON.stringify(tokenResults));
 
 const { access_token, refresh_token, expires_in, token_type } = tokenResults;
 
@@ -121,9 +126,11 @@ const token = access_token;
 
 const scopeFetchers = {
     connections: async () => {
-        const fetchReq = await req("https://discord.com/api/users/@me/connections", "GET")
-            .header("authorization", `${token_type} ${token}`)
-            .send();
+        const fetchReq = await fetch("https://discord.com/api/users/@me/connections", {
+            headers: {
+                authorization: `${token_type} ${token}`,
+              },
+        });
 
         if (!fetchReq) throw new Error("DiscordPassportError: Authorization failed.");
 
@@ -134,9 +141,11 @@ const scopeFetchers = {
         return fetchRes;
     },
     identify: async () => {
-        const fetchReq = await req("https://discord.com/api/users/@me", "GET")
-            .header("authorization", `${token_type} ${token}`)
-            .send();
+        const fetchReq = await fetch("https://discord.com/api/users/@me", {
+            headers: {
+                authorization: `${token_type} ${token}`,
+              },
+        });
 
         if (!fetchReq) throw new Error("DiscordPassportError: Authorization failed.");
 
@@ -147,9 +156,11 @@ const scopeFetchers = {
         return fetchRes;
     },
     guilds: async () => {
-        const fetchReq = await req("https://discord.com/api/users/@me/guilds", "GET")
-            .header("authorization", `${token_type} ${token}`)
-            .send();
+        const fetchReq = await fetch("https://discord.com/api/users/@me/guilds", {
+            headers: {
+                authorization: `${token_type} ${token}`,
+              },
+        });
 
         if (!fetchReq) throw new Error("DiscordPassportError: Authorization failed.");
 
@@ -169,7 +180,7 @@ return;
 
 }
 /**
- * Refresh your `access_token` using the current `refresh_token`
+ * Refresh your `access_token` using the current `refresh_token`.
  * @returns updated values.
  * @this {Passport} The passport flow.
  * @property {string} this.token The updated access token. 
@@ -212,6 +223,36 @@ async refresh() {
     
     this.expires_in = expires_in;
     
+}
+/**
+ * Adds the user to a guild, requires the `guilds.join` scope.
+ * @param {string} guild The id of the guild to add the user to.
+ * @param {?string} nick Value to set users nickname to. Requires `MANAGE_NICKNAME` permissions.
+ * @param {?array[string]} roles Array of role ids the member is assigned. Requires `MANAGE_ROLES` permissions.
+ * @param {?boolean} mute Whether the user is muted in voice channels. Requires `MUTE_MEMBERS` permissions.
+ * @param {?boolean} deaf Whether the user is deafened in voice channels. Requires `DEAFEN_MEMBERS` permissions.
+ */
+async joinGuild(guild, nick, roles, mute, deaf) {
+    if (!this.scope.includes("guilds.join")) throw new Error("DiscordPassportError: The method joinGuild requires the guilds.join scope.");
+    if (!guild) throw new Error("DiscordPassportError: The guild param is missing.");
+    if (isNaN(guild)) throw new TypeError("DiscordPassportError: The guild param must be a string representation of a number.");
+    if (guild.length !== 18) throw new RangeError("DiscordPassportError: The guild param must be a valid, 18 digit snowflake.");
+    if (typeof guild !== "string") throw new TypeError("DiscordPassportError: The guild param must be a string representation of a number.");
+
+    const fetchReq = await fetch(`https://discord.com/api/guilds/${guild}/members/${this.user.id}`, {
+            method: "put",
+            body: {
+                'access_token': this.token,
+                'nick': nick || null,
+                'roles': roles || null,
+                'mute': mute || false,
+                'deaf': deaf || false
+            }
+        })
+
+        if (!fetchReq) throw new Error("DiscordPassportError: Could not add the user to the guild, make sure the client has CREATE_INSTANT_INVITE permissions.");
+
+        return;
 }
 
 }
