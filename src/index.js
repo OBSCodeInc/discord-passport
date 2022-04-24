@@ -204,7 +204,7 @@ async refresh() {
     if (state) refreshData.append('state', state);
     
     const tokenRequest = await fetch("https://discord.com/api/oauth2/token", {
-        method: "get",
+        method: "post",
         body: refreshData
     })
     
