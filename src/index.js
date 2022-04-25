@@ -203,9 +203,11 @@ async refresh() {
     
     if (state) refreshData.append('state', state);
     
-    const tokenRequest = await req("https://discord.com/api/oauth2/token", "GET")
-        .body(refreshData)
-        .send();
+    const tokenRequest = await fetch("https://discord.com/api/oauth2/token", {
+        method: "post",
+        body: refreshData
+    })
+    
     
     if (!tokenRequest) throw new Error("DiscordPassportError: Unable to fetch the token with given options. Make sure they are correct.");
     
